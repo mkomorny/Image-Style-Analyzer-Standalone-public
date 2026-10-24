@@ -1,0 +1,16 @@
+node_modules/
+dist/
+release/
+coverage/
+.DS_Store
+*.log
+*.exe
+*.blockmap
+.env*
+!.env.example
+terminals/
+uploads/
+
+# Keep the electron-builder icon; ignore the rest of build/
+build/*
+!build/icon.png

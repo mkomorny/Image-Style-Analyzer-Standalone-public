@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Changes Tracker</title>
+<style>
+  :root{
+    --bg:#12141c;
+    --bg-raised:#181b26;
+    --line:#2a2e3a;
+    --text:#e8e6e0;
+    --text-dim:#9195a3;
+    --accent:#5fa8a0;
+    --accent-dim:#3d6f6a;
+    --amber:#d9a05b;
+    --rose:#c97064;
+    --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    padding:32px 20px 80px;
+    min-height:100vh;
+  }
+  .wrap{max-width:880px; margin:0 auto;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:16px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:20px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  h1{
+    font-size:1.5rem;
+    margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--text-dim);
+    font-size:0.85rem;
+    font-family:var(--mono);
+  }
+  .sync-note{
+    font-size:0.72rem;
+    color:var(--text-dim);
+    font-family:var(--mono);
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    padding:6px 10px;
+    border-radius:4px;
+    max-width:220px;
+    line-height:1.4;
+  }
+
+  .controls{
+    display:flex;
+    gap:10px;
+    margin-bottom:24px;
+    flex-wrap:wrap;
+  }
+  input, textarea, select{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:0.9rem;
+    padding:9px 11px;
+    border-radius:5px;
+    outline:none;
+  }
+  input:focus, textarea:focus, select:focus{
+    border-color:var(--accent-dim);
+  }
+  .search{flex:1; min-width:160px;}
+  .filter-select{min-width:160px;}
+
+  button{
+    font-family:var(--sans);
+    font-size:0.85rem;
+    font-weight:600;
+    border-radius:5px;
+    border:1px solid transparent;
+    cursor:pointer;
+    padding:9px 16px;
+  }
+  .btn-primary{background:var(--accent); color:#0d1712;}
+  .btn-primary:hover{background:#71bdb4;}
+  .btn-ghost{background:transparent; border-color:var(--line); color:var(--text-dim);}
+  .btn-ghost:hover{color:var(--text); border-color:var(--text-dim);}
+  .btn-danger{background:transparent; color:var(--rose); border-color:var(--rose);}
+  .btn-danger:hover{background:rgba(201,112,100,0.12);}
+
+  form.entry-form{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:18px;
+    margin-bottom:32px;
+    display:none;
+  }
+  form.entry-form.open{display:block;}
+  .form-row{display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+  .form-row > *{flex:1; min-width:140px;}
+  .form-row label{
+    display:block;
+    font-family:var(--mono);
+    font-size:0.7rem;
+    color:var(--text-dim);
+    margin-bottom:4px;
+  }
+  textarea{width:100%; min-height:70px; resize:vertical; font-family:var(--sans);}
+  .form-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:6px;}
+
+  .project-group{margin-bottom:30px;}
+  .project-title{
+    font-family:var(--mono);
+    font-size:0.95rem;
+    color:var(--amber);
+    margin-bottom:12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .project-title::before{content:"#"; opacity:0.6;}
+
+  .log{
+    position:relative;
+    padding-left:22px;
+  }
+  .log::before{
+    content:"";
+    position:absolute;
+    left:5px;
+    top:6px;
+    bottom:6px;
+    width:1px;
+    background:var(--line);
+  }
+  .entry{
+    position:relative;
+    padding-bottom:20px;
+  }
+  .entry::before{
+    content:"";
+    position:absolute;
+    left:-22px;
+    top:5px;
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:var(--accent);
+    border:2px solid var(--bg);
+    box-shadow:0 0 0 1px var(--accent-dim);
+  }
+  .entry-head{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:4px;
+  }
+  .version{
+    font-family:var(--mono);
+    font-weight:600;
+    color:var(--text);
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    padding:1px 7px;
+    border-radius:4px;
+    font-size:0.85rem;
+  }
+  .model{
+    font-family:var(--mono);
+    font-size:0.72rem;
+    color:var(--amber);
+    background:rgba(217,160,91,0.1);
+    border:1px solid rgba(217,160,91,0.28);
+    padding:1px 7px;
+    border-radius:4px;
+  }
+  .date{
+    font-family:var(--mono);
+    font-size:0.75rem;
+    color:var(--text-dim);
+  }
+  .desc{
+    font-size:0.9rem;
+    line-height:1.5;
+    color:var(--text);
+    margin:4px 0 8px;
+    white-space:pre-wrap;
+  }
+  .entry-foot{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .repo-link{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:var(--accent);
+    text-decoration:none;
+    border-bottom:1px dotted var(--accent-dim);
+    word-break:break-all;
+  }
+  .repo-link:hover{color:#8fd6cd;}
+  .no-link{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:var(--text-dim);
+    font-style:italic;
+  }
+  .entry-actions{
+    margin-left:auto;
+    display:flex;
+    gap:10px;
+    flex-shrink:0;
+  }
+  .icon-btn{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    font-size:0.75rem;
+    font-family:var(--mono);
+    padding:2px 4px;
+    cursor:pointer;
+  }
+  .icon-btn:hover{color:var(--text);}
+  .icon-btn.danger:hover{color:var(--rose);}
+
+  .empty{
+    text-align:center;
+    color:var(--text-dim);
+    font-family:var(--mono);
+    font-size:0.85rem;
+    padding:60px 20px;
+    border:1px dashed var(--line);
+    border-radius:8px;
+  }
+  .status{
+    font-family:var(--mono);
+    font-size:0.75rem;
+    color:var(--text-dim);
+    margin-bottom:14px;
+    min-height:1em;
+  }
+  .status.error{color:var(--rose);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>App Changes Tracker</h1>
+      <div class="sub">model · date · project · what changed · repo link</div>
+    </div>
+    <div class="sync-note">Shared log — visible and editable by anyone using this tool, including other sessions or bots you hand it to.</div>
+  </header>
+
+  <div class="status" id="status">Loading entries…</div>
+
+  <div class="controls">
+    <input class="search" id="searchInput" type="text" placeholder="Search project, version, model, or description…">
+    <select class="filter-select" id="projectFilter">
+      <option value="">All projects</option>
+    </select>
+    <button class="btn-primary" id="addBtn">+ Add version</button>
+  </div>
+
+  <form class="entry-form" id="entryForm">
+    <input type="hidden" id="editId">
+    <div class="form-row">
+      <div>
+        <label for="fProject">Project</label>
+        <input id="fProject" type="text" placeholder="e.g. Image Style Analyzer (Standalone)" required>
+      </div>
+      <div>
+        <label for="fVersion">Version</label>
+        <input id="fVersion" type="text" placeholder="e.g. v1.0.0 or commit hash" required>
+      </div>
+      <div>
+        <label for="fDate">Date</label>
+        <input id="fDate" type="date">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label for="fModel">Who / model</label>
+        <input id="fModel" type="text" placeholder="e.g. Claude Sonnet 5">
+      </div>
+      <div style="flex:2;">
+        <label for="fRepo">GitHub repo link (for this version)</label>
+        <input id="fRepo" type="url" placeholder="https://github.com/user/repo/commit/abc123">
+      </div>
+    </div>
+    <div class="form-row">
+      <div style="flex:1 1 100%;">
+        <label for="fDesc">Description — what changed</label>
+        <textarea id="fDesc" placeholder="What changed in this version, for someone reading the log later…"></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-ghost" id="cancelBtn">Cancel</button>
+      <button type="submit" class="btn-primary" id="saveBtn">Save entry</button>
+    </div>
+  </form>
+
+  <div id="log"></div>
+
+</div>
+
+<script>
+(function(){
+  const statusEl = document.getElementById('status');
+  const logEl = document.getElementById('log');
+  const form = document.getElementById('entryForm');
+  const addBtn = document.getElementById('addBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const searchInput = document.getElementById('searchInput');
+  const projectFilter = document.getElementById('projectFilter');
+  const editIdField = document.getElementById('editId');
+  const STORAGE_KEY = 'app-changes-entries';
+
+  const STANDALONE = 'Image Style Analyzer (Standalone)';
+  const LUXE = 'Prompt Generator 7.3 Luxe (WITH definitions)';
+  const NOD = 'Prompt Generator 7.3 (WITHOUT definitions)';
+  const FORGE = 'DDW Imagination Tools / Forge Studio (Claude rebuild)';
+
+  /* Seeded from this folder (including electron/, src/, release/, terminals/,
+     assets/.aistudio/), git history, and every sibling project that shipped
+     Image Style Analyzer / StyleAnalyzer. Model is taken from Co-Authored-By
+     trailers, metadata.json, or session paths when present; otherwise
+     "Not listed in commit". */
+  const SEED_ENTRIES = [
+    {
+      id: 'isa-scaffold-2026-06-15',
+      project: STANDALONE,
+      version: 'scaffold',
+      date: '2026-06-15',
+      model: 'Google AI Studio (Gemini)',
+      repoUrl: '',
+      description: 'First files in this folder. Vite/React/Tailwind skeleton: metadata.json (name “Image Style Analyzer”, majorCapabilities includes MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API), ThemeSelector, src/index.css, src/main.tsx, tsconfig.json, and assets/.aistudio/.gitignore. No git repo yet. File mtimes all 2026-06-15 22:18. This is the AI Studio export the later Grok desktop app was built on.'
+    },
+    {
+      id: 'isa-v1.0.0-local',
+      project: STANDALONE,
+      version: 'v1.0.0',
+      date: '2026-06-16',
+      model: 'Grok (Grok Projects session; version not recorded)',
+      repoUrl: 'https://github.com/mkomorny/Image-Style-Analyzer-Standalone/commit/c977d4072d0cb40cbb868b9137eb236cfc4258e7',
+      description: 'Standalone desktop app completed in C:\\Users\\<you>\\Grok Projects\\Image Style Analyzer, then copied here. package.json 1.0.0. App.tsx (993 lines) is the full analyzer: Unsplash sample aesthetics, upload/drag-drop, /api/analyze via Grok vision (grok-4.3 with grok-4.20-0309-non-reasoning fallback + 429/503 retries), copyable lighting/composition/color/brushwork/camera + styleTemplate, and /api/export that appends to a master text file. Server is xAI-only (XAI_API_KEY, in-app ApiKeySetup writes .env). Electron shell (port 3847), start-app.bat/.ps1, Launch Desktop App.bat, start-local.mjs. Packaged the same afternoon: release/Image Style Analyzer Setup 1.0.0.exe and release/win-unpacked/ImageStyleAnalyzer.exe (2026-06-16 14:04). terminals/1–10.txt are the original npm run dev / production server runs. Source files under src/, electron/, and server.ts were not edited again after this date. GitHub link is the later snapshot of this exact tree (no repo existed on June 16).'
+    },
+    {
+      id: 'isa-c977d40',
+      project: STANDALONE,
+      version: 'c977d40',
+      date: '2026-08-18',
+      model: 'Not listed in commit',
+      repoUrl: 'https://github.com/mkomorny/Image-Style-Analyzer-Standalone/commit/c977d4072d0cb40cbb868b9137eb236cfc4258e7',
+      description: 'First git commit and GitHub publish of this folder as https://github.com/mkomorny/Image-Style-Analyzer-Standalone (private, created 2026-08-18T07:16:48Z). Message: “Initial commit: Image Style Analyzer - Standalone”. 27 files, 10,270 insertions. Added README.md, .gitignore, and .env.example on top of the June 16 tree. Author: DigiDreamWeaver <287026875+mkomorny@users.noreply.github.com>. No Co-Authored-By trailer. App Changes Tracker.html was left untracked. release/, dist/, terminals/, and .env stay gitignored.'
+    },
+    {
+      id: 'luxe-507da28-isa',
+      project: LUXE,
+      version: '507da28',
+      date: '2026-07-08',
+      model: 'Claude Sonnet 5',
+      repoUrl: 'https://github.com/mkomorny/Prompt-Generator-7.3-Luxe/commit/507da28f7365498111eeb196b8d088b23c913d1f',
+      description: 'Image Style Analyzer first appears in version control as a suite tool. src/components/ImageStyleAnalyzer.tsx is wired from ToolLaunchpad + App.tsx (currentApp === “image_style_analyzer”). Same analysis fields and /api/analyze flow as the standalone, plus local K-means 7-swatch palette extraction from the uploaded image and BookmarkPlus save-to-favorites. Baseline snapshot of Prompt Generator V7.3 WITH constraint definitions before mock-to-real work. Co-Authored-By: Claude Sonnet 5.'
+    },
+    {
+      id: 'luxe-95f5261-isa',
+      project: LUXE,
+      version: '95f5261',
+      date: '2026-07-08',
+      model: 'Claude Sonnet 5',
+      repoUrl: 'https://github.com/mkomorny/Prompt-Generator-7.3-Luxe/commit/95f52614772af3135aae87744caf877d6ef122cc',
+      description: 'Backend change that Image Style Analyzer actually calls. /api/analyze (plus reverse-prompt and biometric-persona) now share callVisionLlM() + stripCodeFence() instead of three hand-rolled grok/claude/gemini branches. Claude keys no longer silently route to Gemini. Fixed escaped “\\n\\n” in the Claude analyze schema prompt so the JSON schema is a real newline. ImageStyleAnalyzer.tsx itself was not edited. Co-Authored-By: Claude Sonnet 5.'
+    },
+    {
+      id: 'nod-342d8fc-isa',
+      project: NOD,
+      version: '342d8fc',
+      date: '2026-07-08',
+      model: 'Not listed in commit',
+      repoUrl: 'https://github.com/mkomorny/Prompt-Generator-7.3/commit/342d8fcc102f95c1192baf888a4ef70c19d7a581',
+      description: 'Sibling baseline of Prompt Generator V7.3 WITHOUT constraint definitions. Ships the same ImageStyleAnalyzer.tsx launchpad tool as Luxe 507da28 (analysis UI, K-means palette, favorites, /api/analyze). Author: Miranda Komorny. No Co-Authored-By trailer (same-day parallel pass to the Luxe Claude Sonnet 5 session).'
+    },
+    {
+      id: 'nod-a43a25b-isa',
+      project: NOD,
+      version: 'a43a25b',
+      date: '2026-07-08',
+      model: 'Not listed in commit',
+      repoUrl: 'https://github.com/mkomorny/Prompt-Generator-7.3/commit/a43a25ba28679ac9af9048140d13302eca5b0fbf',
+      description: 'NoD copy of the analyze-backend dedup. /api/analyze, /api/reverse-prompt, and biometric-persona now share callVisionLlM + stripCodeFence. Claude keys that used to be sent to Gemini now reach Anthropic. ImageStyleAnalyzer.tsx unchanged.'
+    },
+    {
+      id: 'nod-683c701-isa',
+      project: NOD,
+      version: '683c701',
+      date: '2026-07-09',
+      model: 'Claude Sonnet 4.6',
+      repoUrl: 'https://github.com/mkomorny/Prompt-Generator-7.3/commit/683c7010645a35b238830c4b4b2172a3f5a8d23c',
+      description: 'ImageStyleAnalyzer.tsx itself changed (+27/−3) while the suite was renamed Image Tools Suite V1 NoD. Sample aesthetic cards now load /api/style-preview/{slug} with the original Unsplash URL as fallbackUrl; onError falls back and triggers generateImageFromSample. Image-generation payload now includes styleTemplate. Co-Authored-By: Claude Sonnet 4.6.'
+    },
+    {
+      id: 'forge-d2ae053-isa',
+      project: FORGE,
+      version: 'd2ae053',
+      date: '2026-08-13',
+      model: 'Claude Sonnet 5 (baseline of Antigravity + Claude rebuild)',
+      repoUrl: 'https://github.com/mkomorny/DDW-Imagination-Tools-Rebuilt-by-Claude/commit/d2ae053922f0ab144c34bbe8f117416a3cedfe55',
+      description: 'Style Analyzer rebuilt as src/components/StyleAnalyzer.tsx inside Forge Studio (B:\\My Apps\\Rebuilt by Claude\\Forge Studio\\Code), later published as DDW-Imagination-Tools-Rebuilt-by-Claude (same SHAs also live on DDW-Imagination-Studios-Claude-Rebuild). Not a copy of the June standalone: provider-aware model picker, analyzeStyle + rollStyles via lib/api.ts, shared kMeansExtract palette, save-to-Favorite Prompts, and the Antigravity-session Gemini Interactions API migration. This commit is the rollback point before the correctness fixes. Co-Authored-By: Claude Sonnet 5.'
+    },
+    {
+      id: 'forge-01958fb-isa',
+      project: FORGE,
+      version: '01958fb',
+      date: '2026-08-13',
+      model: 'Claude Sonnet 5',
+      repoUrl: 'https://github.com/mkomorny/DDW-Imagination-Tools-Rebuilt-by-Claude/commit/01958fbe11b5c25c8b64e5f7c1b3e86d2ae70c2c',
+      description: 'Gemini Interactions API structured-output fix that Style Analyzer depends on. response_mime_type/response_schema had been put in the wrong place, so Gemini style-analysis silently came back as unparsed prose. callVisionLLM now requests real JSON (response_format), drops the invalid temperature field, appends the schema instruction on Gemini the way Claude/Grok already did, and reads the real token-usage field names. Co-Authored-By: Claude Sonnet 5.'
+    },
+    {
+      id: 'forge-1ea4c20-isa',
+      project: FORGE,
+      version: '1ea4c20',
+      date: '2026-08-13',
+      model: 'Claude Sonnet 5',
+      repoUrl: 'https://github.com/mkomorny/DDW-Imagination-Tools-Rebuilt-by-Claude/commit/1ea4c20cb1b5eca20135f6dd606f06ac91684abf',
+      description: 'Style Analyzer model picker scoped to the active API key’s provider. It had been using getAllModelOptionsGrouped(), which listed every provider’s models and let a user pick one the active key cannot authenticate. Reverted to modelOptionsWithAuto(activeProvider), matching PromptCloaker / ConstraintStudio / MonsterForge. Verified in the browser: no saved key → Grok-only; saving a Gemini key rescopes to Gemini-only. Co-Authored-By: Claude Sonnet 5. Same commit also exists on mkomorny/DDW-Imagination-Studios-Claude-Rebuild.'
+    },
+    {
+      id: 'forge-1d81046-isa',
+      project: FORGE,
+      version: '1d81046',
+      date: '2026-08-18',
+      model: 'Not listed in commit',
+      repoUrl: 'https://github.com/mkomorny/DDW-Imagination-Tools-Rebuilt-by-Claude/commit/1d81046b8015a6286ee342868f606c7b7055eb7d',
+      description: 'Forge Studio / Style Analyzer published to GitHub as mkomorny/DDW-Imagination-Tools-Rebuilt-by-Claude. Adds README and knowledge/source docs next to the app source (includes the current StyleAnalyzer.tsx). Author: DigiDreamWeaver. No Co-Authored-By trailer. This is the suite rebuild’s public snapshot, not a change to the June standalone tree.'
+    }
+  ];
+
+  let entries = [];
+
+  function setStatus(msg, isError){
+    statusEl.textContent = msg || '';
+    statusEl.className = 'status' + (isError ? ' error' : '');
+  }
+
+  function uid(){
+    return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+
+  function mergeSeed(existing){
+    const byId = {};
+    existing.forEach(en => { if(en && en.id) byId[en.id] = en; });
+    let added = 0;
+    SEED_ENTRIES.forEach(seed => {
+      if(!byId[seed.id]){
+        byId[seed.id] = seed;
+        added += 1;
+      }
+    });
+    return { list: Object.keys(byId).map(id => byId[id]), added };
+  }
+
+  async function loadEntries(){
+    setStatus('Loading entries…');
+    let loaded = [];
+    try{
+      const result = await window.storage.get(STORAGE_KEY, true);
+      loaded = result && result.value ? JSON.parse(result.value) : [];
+      if(!Array.isArray(loaded)) loaded = [];
+    }catch(err){
+      loaded = [];
+    }
+    const merged = mergeSeed(loaded);
+    entries = merged.list;
+    if(merged.added){
+      await saveEntries();
+    }
+    setStatus(entries.length ? entries.length + ' entries' : 'No entries yet.');
+    render();
+  }
+
+  async function saveEntries(){
+    try{
+      const result = await window.storage.set(STORAGE_KEY, JSON.stringify(entries), true);
+      if(!result){
+        setStatus('Save failed — your change may not persist. Try again.', true);
+        return false;
+      }
+      return true;
+    }catch(err){
+      setStatus('Save failed — your change may not persist. Try again.', true);
+      return false;
+    }
+  }
+
+  function openForm(entry){
+    form.classList.add('open');
+    if(entry){
+      editIdField.value = entry.id;
+      document.getElementById('fProject').value = entry.project;
+      document.getElementById('fVersion').value = entry.version;
+      document.getElementById('fDate').value = entry.date || '';
+      document.getElementById('fModel').value = entry.model || '';
+      document.getElementById('fRepo').value = entry.repoUrl || '';
+      document.getElementById('fDesc').value = entry.description || '';
+    } else {
+      editIdField.value = '';
+      form.reset();
+      document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+    }
+    document.getElementById('fProject').focus();
+  }
+
+  function closeForm(){
+    form.classList.remove('open');
+    form.reset();
+    editIdField.value = '';
+  }
+
+  addBtn.addEventListener('click', () => openForm(null));
+  cancelBtn.addEventListener('click', closeForm);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = editIdField.value;
+    const data = {
+      project: document.getElementById('fProject').value.trim(),
+      version: document.getElementById('fVersion').value.trim(),
+      date: document.getElementById('fDate').value,
+      model: document.getElementById('fModel').value.trim(),
+      repoUrl: document.getElementById('fRepo').value.trim(),
+      description: document.getElementById('fDesc').value.trim()
+    };
+    if(!data.project || !data.version){
+      setStatus('Project and version are required.', true);
+      return;
+    }
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+
+    if(id){
+      const idx = entries.findIndex(en => en.id === id);
+      if(idx > -1) entries[idx] = Object.assign({}, entries[idx], data);
+    } else {
+      entries.push(Object.assign({id: uid()}, data));
+    }
+
+    const ok = await saveEntries();
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save entry';
+    if(ok){
+      setStatus('');
+      closeForm();
+      render();
+    }
+  });
+
+  async function deleteEntry(id){
+    const prev = entries.slice();
+    entries = entries.filter(en => en.id !== id);
+    render();
+    const ok = await saveEntries();
+    if(!ok){
+      entries = prev;
+      render();
+    }
+  }
+
+  function escapeHtml(str){
+    return (str || '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  function fmtDate(d){
+    if(!d) return '';
+    const parts = d.split('-');
+    if(parts.length !== 3) return d;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[parseInt(parts[1],10)-1] + ' ' + parseInt(parts[2],10) + ', ' + parts[0];
+  }
+
+  function render(){
+    const query = searchInput.value.trim().toLowerCase();
+    const projFilter = projectFilter.value;
+
+    const projects = [...new Set(entries.map(e => e.project))].sort((a,b) => a.localeCompare(b));
+    const currentFilterVal = projectFilter.value;
+    projectFilter.innerHTML = '<option value="">All projects</option>' +
+      projects.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+    projectFilter.value = projects.includes(currentFilterVal) ? currentFilterVal : '';
+
+    let filtered = entries.filter(en => {
+      if(projFilter && en.project !== projFilter) return false;
+      if(query){
+        const hay = (en.project + ' ' + en.version + ' ' + (en.model || '') + ' ' + en.description).toLowerCase();
+        if(!hay.includes(query)) return false;
+      }
+      return true;
+    });
+
+    if(entries.length === 0){
+      logEl.innerHTML = '<div class="empty">No versions logged yet.<br>Click "+ Add version" to start the log.</div>';
+      return;
+    }
+    if(filtered.length === 0){
+      logEl.innerHTML = '<div class="empty">No entries match your search.</div>';
+      return;
+    }
+
+    const grouped = {};
+    filtered.forEach(en => {
+      if(!grouped[en.project]) grouped[en.project] = [];
+      grouped[en.project].push(en);
+    });
+
+    const groupNames = Object.keys(grouped).sort((a,b) => a.localeCompare(b));
+
+    logEl.innerHTML = groupNames.map(project => {
+      const list = grouped[project].slice().sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+      const rows = list.map(en => `
+        <div class="entry" data-id="${en.id}">
+          <div class="entry-head">
+            <span class="version">${escapeHtml(en.version)}</span>
+            ${en.model ? `<span class="model">${escapeHtml(en.model)}</span>` : ''}
+            <span class="date">${escapeHtml(fmtDate(en.date))}</span>
+          </div>
+          ${en.description ? `<div class="desc">${escapeHtml(en.description)}</div>` : ''}
+          <div class="entry-foot">
+            ${en.repoUrl
+              ? `<a class="repo-link" href="${escapeHtml(en.repoUrl)}" target="_blank" rel="noopener">${escapeHtml(en.repoUrl)}</a>`
+              : `<span class="no-link">no repo link</span>`}
+            <span class="entry-actions">
+              <button class="icon-btn edit-btn">edit</button>
+              <button class="icon-btn danger del-btn">delete</button>
+            </span>
+          </div>
+        </div>
+      `).join('');
+      return `
+        <div class="project-group">
+          <div class="project-title">${escapeHtml(project)}</div>
+          <div class="log">${rows}</div>
+        </div>
+      `;
+    }).join('');
+
+    logEl.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.target.closest('.entry').dataset.id;
+        const en = entries.find(x => x.id === id);
+        if(en) openForm(en);
+      });
+    });
+    logEl.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.target.closest('.entry').dataset.id;
+        if(confirm('Delete this entry?')) deleteEntry(id);
+      });
+    });
+  }
+
+  searchInput.addEventListener('input', render);
+  projectFilter.addEventListener('change', render);
+
+  loadEntries();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "Image Style Analyzer",
+  "description": "Deep image analysis tool that extracts style characteristics, light qualities, brushwork, and camera configurations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
